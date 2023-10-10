@@ -1,0 +1,152 @@
+version: 2
+
+sources:
+  - name: airbyte_raw
+    database: TPCDS
+    schema: RAW
+    tables:
+      - name: ITEM
+        columns:
+          - name: i_item_sk
+            tests: 
+              - not_null
+              - unique
+      - name: PROMOTION 
+        columns:
+          - name: P_START_DATE_SK          
+            tests: 
+              - relationships: 
+                  to: DATE_DIM
+                  field: D_DATE_SK
+          - name: P_END_DATE_SK          
+            tests: 
+              - relationships: 
+                  to: DATE_DIM
+                  field: D_DATE_SK
+          - name: P_ITEM_SK          
+            tests: 
+              - relationships: 
+                  to: ITEM
+                  field: I_ITEM_SK
+
+      - name: CUSTOMER
+        columns:
+          - name: C_CUSTOMER_SK
+            tests:
+              - not_null
+              - unique
+      - name: CUSTOMER_ADDRESS
+      - name: CUSTOMER_DEMOGRAPHICS
+      - name: HOUSEHOLD_DEMOGRAPHICS
+      - name: INCOME_BAND
+      - name: CATALOG_SALES
+        columns: 
+          - name: CS_BILL_CUSTOMER_SK          
+            tests: 
+              - relationships: 
+                  to: CUSTOMER
+                  field: C_CUSTOMER_SK
+          - name: CS_ITEM_SK
+            tests:
+              - relationships:
+                  to: ITEM
+                  field: I_ITEM_SK
+          - name: CS_SOLD_DATE_SK
+            tests: 
+              - relationships:
+                  to: DATE_DIM
+                  field: D_DATE_SK
+          - name: CS_SOLD_TIME_SK
+            tests: 
+              - relationships:
+                  to: TIME_DIM
+                  field: T_TIME_SK
+          - name: CS_PROMO_SK
+            tests: 
+              - relationships:
+                  to: PROMOTION
+                  field: P_PROMO_SK
+          - name: CS_WAREHOUSE_SK
+            tests: 
+              - relationships:
+                  to: WAREHOUSE
+                  field: W_WAREHOUSE_SK
+          - name: CS_SHIP_DATE_SK
+            tests: 
+              - relationships:
+                  to: DATE_DIM
+                  field: D_DATE_SK          
+          - name: CS_BILL_ADDR_SK
+            tests: 
+              - relationships:
+                  to: CUSTOMER_ADDRESS
+                  field: CA_ADDRESS_SK
+
+          
+      - name: WEB_SALES
+        columns: 
+          - name: WS_BILL_CUSTOMER_SK          
+            tests: 
+              - relationships: 
+                  to: CUSTOMER
+                  field: C_CUSTOMER_SK
+          - name: WS_ITEM_SK
+            tests:
+              - relationships:
+                  to: ITEM
+                  field: I_ITEM_SK
+          - name: WS_SOLD_DATE_SK
+            tests: 
+              - relationships:
+                  to: DATE_DIM
+                  field: D_DATE_SK
+
+          - name: WS_SOLD_TIME_SK
+            tests: 
+              - relationships:
+                  to: TIME_DIM
+                  field: T_TIME_SK
+          - name: WS_PROMO_SK
+            tests: 
+              - relationships:
+                  to: PROMOTION
+                  field: P_PROMO_SK
+          - name: WS_WAREHOUSE_SK
+            tests: 
+              - relationships:
+                  to: WAREHOUSE
+                  field: W_WAREHOUSE_SK
+          - name: WS_SHIP_DATE_SK
+            tests: 
+              - relationships:
+                  to: DATE_DIM
+                  field: D_DATE_SK          
+          - name: WS_BILL_ADDR_SK
+            tests: 
+              - relationships:
+                  to: CUSTOMER_ADDRESS
+                  field: CA_ADDRESS_SK
+      - name: DATE_DIM 
+      - name: INVENTORY
+        columns:
+          - name: INV_ITEM_SK
+            tests:
+              - relationships:
+                  to: ITEM
+                  field: I_ITEM_SK
+          - name: INV_DATE_SK
+            tests:
+              - relationships:
+                  to: DATE_DIM
+                  field: D_DATE_SK
+          # Leaving it out - Our inventory have items belonging to 1000 different warehouses 
+          # while our warehouse table only have 4 different warehouses
+          # - name: INV_WAREHOUSE_SK
+          #   tests:
+          #     - relationships:
+          #         to: WAREHOUSE
+          #         field: W_WAREHOUSE_SK
+
+
+
+      
