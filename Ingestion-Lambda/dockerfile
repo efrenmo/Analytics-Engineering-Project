@@ -1,0 +1,15 @@
+
+# Download Python 3.10 image
+# from public AWS Elastic Container Registry
+FROM public.ecr.aws/lambda/python:3.10
+
+# Dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Code file plus configuration file
+COPY lambda_function.py ./
+COPY .env ./
+
+# Command to execute when container starts
+CMD ["lambda_function.lambda_handler"]
