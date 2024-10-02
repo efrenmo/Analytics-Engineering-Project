@@ -39,7 +39,8 @@ The project utilized the TPC-DS (Transaction Processing Performance Council Deci
 
 - **Programming Language**: Python
 - **Database**: PostgreSQL
-- **Data Ingestion Tools**: Airbyte, AWS Lambda
+- **Data Ingestion Tools**: Airbyte, AWS Cloud (EC2, Lambda, S3, ECR)
+- **Containerization**: Docker
 - **Data Warehouse**: Snowflake
 - **Data Transformation Tool**: DBT
 - **Business Intelligence Tool**: Metabase
