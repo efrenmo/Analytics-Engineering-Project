@@ -9,7 +9,7 @@
 
 ### Objective
 
-The main objective of this project was to design and implement an end-to-end data engineering solution that consolidates data from multiple sources into a unified data warehouse. This enables the client to identify trends, patterns, and insights that can aid in decision-making processes. The project aimed to provide hands-on experience with various phases of the data engineering process, including data ingestion, transformation, and analytics.
+To Engineere a comprehensive business intelligence solution for a client struggling with fragmented data sources, consolidating multiple transactional databases and cloud-stored files into a unified Snowflake data warehouse that enabled data-driven decision making and actionable business insights.
 
 ### Problem Statement
 
