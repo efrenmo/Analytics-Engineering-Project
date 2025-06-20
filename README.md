@@ -21,7 +21,7 @@ To Engineere a comprehensive business intelligence solution consolidating multip
 
 We have two main data sources; RDS PostgreSQL transactional databases, and csv files stored in AWS S3.
 
-1. **Data Source 1: Transactional databases - RDS PostgreSQL:**
+1. **RDS PostgreSQL to Snowflake Data Warehouse:**
    - **Airbyte** was used to replicate selected tables from PostgreSQL and map them to staging tables in the Snowflake data warehouse.
    - It enabled incremental replication from PostgreSQL into Snowflake.
      - Incremental SYNCS were configured using primary keys and cursor fields.
@@ -31,10 +31,97 @@ We have two main data sources; RDS PostgreSQL transactional databases, and csv f
      - **Product fit:** It provides dedicated connectors for both PostgreSQL and Snowflake, ensuring seamless integration between the two platforms.
      - **Ease to use:** You can easily configure RDS as the source, and Snowflake as the destination, create a connection, and set-up a sync schedule directly from the Airbyte user interface.
      - **Production-Ready:** Airbyte is used by over 30,000 companies worldwide to cover their data pipeline needs, demonstrating its scalability and reliability as a data integration platform.     - 
-2. **Data Source 2: AWS S3 - CSV files:**
+2. **AWS S3 (CSV files) to Snowflake Data Warehouse:**
      - To ingest CSV files from AWS S3 and load their data into tables in the Snowflake data warehouse, a **Lambda function** is configured to trigger when new CSV files are detected in a specific S3 bucket.
      - When activated, the Lambda function loads a custom **Docker** image from our private **Elastic Container Registry (ECR)** repository. This Docker image contains the necessary Python script and dependencies to establish connections with both AWS S3 and Snowflake, process the CSV file, and load its data into Snowflake.
-     - Lambda function was the tool of choice for its event-driven processing, simplicity and speed, scalability and efficiency .
+     - Lambda function was the tool of choice for its event-driven processing, simplicity and speed, scalability and efficiency.
+     - The Lambda function uses the **Bulk loading from local file system** method:
+       -  **Step 1:** Dowloads the csv file from S3 bucket to the Lambda's function ephemeral storage.
+       -  **Step 2:** Uses the **PUT** command to upload the local CSV file `/tmp/inventory.csv` to the created Snowflake **Internal Named Stage**.
+       -  **Step 3:** Uses the **COPY INTO** command to load the contents of the staged files into a Snowflake database table in the landing zone.
+
+<p align="center">
+  <img src="https://github.com/efrenmo/Analytics-Engineering-Project/blob/main/Screenshots/data-load-bulk-file-system.png" width="900" height="550" />
+</p>
+
+#### Code executed by lambda function:
+``` Python
+import os
+import boto3
+import snowflake.connector as sf
+from dotenv import load_dotenv
+import json
+import os 
+import snowflake.connector as sf
+
+def lambda_handler(event, context):
+   
+    bucket_name = 'de-materials-tpcds'
+    file_name = 'inventory.csv'   
+    local_file_path = '/tmp/inventory.csv'
+    
+    # Snowflake Connection Parameters
+    load_dotenv()  
+
+    user= os.getenv('user')
+    password= os.getenv('password')
+    account= os.getenv('account')
+    warehouse= os.getenv('warehouse')
+    database= os.getenv('database')
+    schema= os.getenv('schema')
+    table= os.getenv('table')
+    role= os.getenv('role')
+    stage_name= os.getenv('stage_name')
+    
+    # Grabs the inventory.csv file from S3 bucket
+    # Save the data in lambda /tmp/ directory
+    s3 = boto3.client('s3')
+    s3.download_file(bucket_name, file_name, local_file_path)
+    # No need to hardcode credentials if the Lambda function has an IAM role with permission to access the S3 object.
+    # boto3 will automatically use the Lambda's execution role credentials.
+    
+    # connecting to snowflake
+    conn = sf.connect(user = user, password = password, \
+            account = account, warehouse=warehouse, \
+            database=database, schema=schema, role=role 
+            )
+    cursor = conn.cursor()
+    
+    # Use Schema
+    use_schema = f"use schema {schema}"
+    cursor.execute(use_schema)
+    
+    # Create CSV format named 'COMMA_CSV'
+    create_csv_format = "CREATE OR REPLACE FILE FORMAT COMMA_CSV TYPE ='CSV' FIELD_DELIMITER = ',';"
+    cursor.execute(create_csv_format)
+
+    create_internal_named_stage = f"CREATE OR REPLACE STAGE {stage_name} FILE_FORMAT =COMMA_CSV"
+    cursor.execute(create_internal_named_stage)
+
+    # Copy the file from local to the stage
+    copy_into_internal_stage = f"PUT 'file://{local_file_path}' @{stage_name}"
+    cursor.execute(copy_into_internal_stage)
+
+    # List the stage
+    list_stage_query = f"LIST @{stage_name}"
+    cursor.execute(list_stage_query)
+
+    # Truncate table
+    truncate_table = f"truncate table {schema}.{table};"
+    cursor.execute(truncate_table)
+    
+    # Load the data from the stage into a table (example)
+    copy_into_query = f"COPY INTO {schema}.{table} FROM @{stage_name}/{file_name} ON_ERROR=CONTINUE, FILE_FORMAT=COMMA_CSV;"  
+    cursor.execute(copy_into_query)
+    
+    print("File uploaded to Snowflake successfully.")
+    
+    return {
+        'statusCode': 200,
+        'body': 'File downloaded and uploaded to Snowflake successfully.'
+    }
+
+```
 
 ### Data Transformation
    - **DBT (Data Build Tool)** was central to my transformation layer. 
